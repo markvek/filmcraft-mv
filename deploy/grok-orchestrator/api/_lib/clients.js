@@ -44,6 +44,39 @@ async function supabaseFetch(config, path, options = {}) {
   return readJsonResponse(response, 'Supabase');
 }
 
+async function createProcessingJob(config, job) {
+  const rows = await supabaseFetch(config, '/rest/v1/processing_jobs?select=*', {
+    method: 'POST',
+    headers: {
+      prefer: 'return=representation'
+    },
+    body: JSON.stringify(job)
+  });
+
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
+async function readProcessingJob(config, id) {
+  const rows = await supabaseFetch(
+    config,
+    `/rest/v1/processing_jobs?id=eq.${encodeURIComponent(id)}&select=*&limit=1`
+  );
+
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
+async function findProcessingJobRequester(config, workspaceId) {
+  const rows = await supabaseFetch(
+    config,
+    `/rest/v1/processing_jobs?workspace_id=eq.${encodeURIComponent(
+      workspaceId
+    )}&requested_by=not.is.null&select=requested_by&order=created_at.desc&limit=1`
+  );
+
+  const row = Array.isArray(rows) ? rows[0] : null;
+  return row && typeof row.requested_by === 'string' ? row.requested_by : '';
+}
+
 async function verticalFlashFetch(config, path, options = {}) {
   requireConfigValue(config.verticalFlashUrl, 'VERTICALFLASH_URL');
   requireConfigValue(config.verticalFlashToken, 'VERTICALFLASH_TOKEN');
@@ -77,7 +110,10 @@ async function listStorageObjects(config, bucket, prefix, limit = 1000) {
 }
 
 module.exports = {
+  createProcessingJob,
+  findProcessingJobRequester,
   listStorageObjects,
+  readProcessingJob,
   supabaseFetch,
   verticalFlashFetch
 };

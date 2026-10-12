@@ -17,6 +17,7 @@ function getConfig() {
     verticalFlashUrl: cleanEnv('VERTICALFLASH_URL').replace(/\/+$/, ''),
     verticalFlashToken: cleanEnv('VERTICALFLASH_TOKEN'),
     orchestratorPassword: cleanEnv('ORCHESTRATOR_PASSWORD'),
+    processingJobRequestedBy: cleanEnv('PROCESSING_JOB_REQUESTED_BY'),
     superSaucedPassword: cleanEnv('SUPER_SAUCED_PASSWORD'),
     superSaucedWorkspaceId:
       cleanEnv('SUPER_SAUCED_WORKSPACE_ID') || DEFAULT_SUPER_SAUCED_WORKSPACE_ID,
@@ -32,6 +33,7 @@ function configStatus(config) {
     verticalFlashUrl: Boolean(config.verticalFlashUrl),
     verticalFlashToken: Boolean(config.verticalFlashToken),
     orchestratorPassword: Boolean(config.orchestratorPassword),
+    processingJobRequestedBy: Boolean(config.processingJobRequestedBy),
     superSaucedPassword: Boolean(config.superSaucedPassword),
     supabaseMediaBucket: config.supabaseMediaBucket,
     superSaucedWorkspaceId: config.superSaucedWorkspaceId,
