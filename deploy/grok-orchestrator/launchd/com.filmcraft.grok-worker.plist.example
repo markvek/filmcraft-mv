@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.filmcraft.grok-worker</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/YOU/path/to/filmcraft-mv/deploy/grok-orchestrator/scripts/mac-worker.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/YOU/path/to/filmcraft-mv</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ORCHESTRATOR_URL</key>
+    <string>https://filmcraft-mv-grok-orchestrator.vercel.app</string>
+    <key>ORCHESTRATOR_PASSWORD</key>
+    <string>REPLACE_WITH_PASSWORD</string>
+    <key>FILMCRAFT_CLI</key>
+    <string>/Users/YOU/path/to/filmcraft-mv/target/release/filmcraft-cli</string>
+    <key>FILMCRAFT_WORKER_ROOT</key>
+    <string>/Users/YOU/Movies/FilmCraft/Worker</string>
+    <key>NEXT_PUBLIC_SUPABASE_URL</key>
+    <string>https://your-project.supabase.co</string>
+    <key>SUPABASE_SECRET_KEY</key>
+    <string>REPLACE_WITH_SUPABASE_SERVICE_ROLE_KEY</string>
+    <key>SUPABASE_MEDIA_BUCKET</key>
+    <string>project-media</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOU/Movies/FilmCraft/Worker/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOU/Movies/FilmCraft/Worker/launchd.err.log</string>
+</dict>
+</plist>
