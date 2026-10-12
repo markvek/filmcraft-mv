@@ -349,6 +349,11 @@ async function prepareLocalProject(config, job) {
 
   let renderStatus = 'not-rendered';
   if (config.renderFirstPass && importedItemIds.length > 0) {
+    const durationSeconds = Number(payload.editPlan && payload.editPlan.durationSeconds);
+    const rangeArgs =
+      Number.isFinite(durationSeconds) && durationSeconds > 0
+        ? ['--range', 'custom', '--start', '0', '--end', String(durationSeconds)]
+        : ['--range', 'entire'];
     await runFilmCraft(
       config,
       [
@@ -358,8 +363,7 @@ async function prepareLocalProject(config, job) {
         firstPassPath,
         '--format',
         'h264',
-        '--range',
-        'entire',
+        ...rangeArgs,
         '--compact'
       ],
       jobDir
