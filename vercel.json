@@ -2,12 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "grok_orchestrator": {
-      "root": "deploy/grok-orchestrator",
-      "functions": {
-        "api/**/*.js": {
-          "runtime": "nodejs20.x"
-        }
-      }
+      "root": "deploy/grok-orchestrator"
     }
   },
   "rewrites": [
