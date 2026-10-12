@@ -4,7 +4,7 @@
   "private": true,
   "description": "Password-protected Vercel API for Grok to orchestrate FilmCraft, Supabase, and VerticalFlash.",
   "engines": {
-    "node": ">=20"
+    "node": "24.x"
   },
   "scripts": {
     "check": "find api scripts -name '*.js' -print0 | xargs -0 -n1 node --check",

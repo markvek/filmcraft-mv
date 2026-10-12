@@ -1,6 +1,7 @@
 'use strict';
 
 const { getConfig } = require('./_lib/config');
+const { supabaseFetch } = require('./_lib/clients');
 const {
   HttpError,
   methodAllowed,
@@ -43,6 +44,28 @@ function normalizeSources(value) {
   });
 }
 
+async function persistJob(config, job) {
+  const rows = await supabaseFetch(config, `/rest/v1/${encodeURIComponent(config.jobsTable)}`, {
+    method: 'POST',
+    headers: {
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({
+      id: job.id,
+      status: 'queued',
+      project_id: job.projectId,
+      title: job.title,
+      instructions: job.instructions,
+      sources: job.sources,
+      edit_plan: job.editPlan,
+      created_at: job.createdAt,
+      updated_at: job.createdAt
+    })
+  });
+
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
 module.exports = route(async function jobs(req, res) {
   if (!methodAllowed(req, res, ['POST'])) {
     return;
@@ -66,7 +89,7 @@ module.exports = route(async function jobs(req, res) {
 
   const job = {
     id: requestId('edit'),
-    status: 'accepted',
+    status: 'queued',
     projectId,
     title,
     instructions,
@@ -76,12 +99,12 @@ module.exports = route(async function jobs(req, res) {
       'Queue this job for a FilmCraft worker, then upload the rendered output to Supabase completed-videos.',
     createdAt: new Date().toISOString()
   };
+  const persistedJob = await persistJob(config, job);
 
   sendJson(res, 202, {
     ok: true,
-    persisted: false,
+    persisted: true,
     job,
-    note:
-      'This route validates and shapes Grok edit jobs. Add the Supabase queue table contract before enabling durable job persistence.'
+    queueRow: persistedJob
   });
 });

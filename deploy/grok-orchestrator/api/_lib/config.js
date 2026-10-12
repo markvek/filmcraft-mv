@@ -21,7 +21,8 @@ function getConfig() {
     superSaucedWorkspaceId:
       cleanEnv('SUPER_SAUCED_WORKSPACE_ID') || DEFAULT_SUPER_SAUCED_WORKSPACE_ID,
     superSaucedProjectName: cleanEnv('SUPER_SAUCED_PROJECT_NAME') || 'Super Sauced',
-    supabaseMediaBucket: cleanEnv('SUPABASE_MEDIA_BUCKET') || 'project-media'
+    supabaseMediaBucket: cleanEnv('SUPABASE_MEDIA_BUCKET') || 'project-media',
+    jobsTable: cleanEnv('FILMCRAFT_JOBS_TABLE') || 'filmcraft_edit_jobs'
   };
 }
 
@@ -34,6 +35,7 @@ function configStatus(config) {
     orchestratorPassword: Boolean(config.orchestratorPassword),
     superSaucedPassword: Boolean(config.superSaucedPassword),
     supabaseMediaBucket: config.supabaseMediaBucket,
+    jobsTable: config.jobsTable,
     superSaucedWorkspaceId: config.superSaucedWorkspaceId,
     superSaucedProjectName: config.superSaucedProjectName
   };

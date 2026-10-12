@@ -76,7 +76,37 @@ async function listStorageObjects(config, bucket, prefix, limit = 1000) {
   });
 }
 
+async function createSignedStorageUrl(config, bucket, objectPath, expiresIn = 3600) {
+  requireConfigValue(config.supabaseUrl, 'NEXT_PUBLIC_SUPABASE_URL');
+  requireConfigValue(config.supabaseSecretKey, 'SUPABASE_SECRET_KEY');
+
+  const safeExpiresIn = Math.min(Math.max(Number(expiresIn) || 3600, 60), 24 * 60 * 60);
+  const pathParts = String(objectPath || '')
+    .split('/')
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join('/');
+  const result = await supabaseFetch(
+    config,
+    `/storage/v1/object/sign/${encodeURIComponent(bucket)}/${pathParts}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ expiresIn: safeExpiresIn })
+    }
+  );
+
+  const signedPath = result && (result.signedURL || result.signedUrl);
+  if (typeof signedPath !== 'string' || !signedPath) {
+    throw new HttpError(502, 'Supabase did not return a signed URL.');
+  }
+
+  return signedPath.startsWith('http')
+    ? signedPath
+    : `${config.supabaseUrl.replace(/\/+$/, '')}/storage/v1${signedPath}`;
+}
+
 module.exports = {
+  createSignedStorageUrl,
   listStorageObjects,
   supabaseFetch,
   verticalFlashFetch
