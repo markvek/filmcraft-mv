@@ -6,16 +6,31 @@ that Grok or an MCP bridge can call.
 
 ## Deploy on Vercel
 
-1. Import this repository in Vercel.
-2. When Vercel asks which application to deploy, choose the root directory:
+### Preferred: repo-level Services deployment
+
+The repository root now has a `vercel.json` that defines one public service:
+
+```text
+grok_orchestrator -> deploy/grok-orchestrator
+```
+
+In Vercel, set the project framework/preset to **Services** and deploy from the repository root. Public
+requests under `/api/*` route to this service.
+
+### Fallback: standalone deployment
+
+If you do not want to use Vercel Services yet, import this repository and choose the root directory:
 
    ```text
    deploy/grok-orchestrator
    ```
 
-3. Use the default Node/Other preset. This is an API-only deployment.
-4. Add the environment variables from `.env.example` in Vercel Project Settings.
-5. Redeploy.
+Use the default Node/Other preset. This is an API-only deployment.
+
+For either deployment mode:
+
+1. Add the environment variables from `.env.example` in Vercel Project Settings.
+2. Redeploy.
 
 Do not paste `.env.local` into source files and do not commit real tokens. The password protection is
 provided by `ORCHESTRATOR_PASSWORD` or, for the Super Sauced routes only, `SUPER_SAUCED_PASSWORD`.
