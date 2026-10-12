@@ -1,6 +1,7 @@
 'use strict';
 
 const { getConfig } = require('./_lib/config');
+const { createProcessingJob, findProcessingJobRequester, readProcessingJob } = require('./_lib/clients');
 const {
   HttpError,
   methodAllowed,
@@ -10,6 +11,8 @@ const {
   route,
   sendJson
 } = require('./_lib/http');
+
+const FILMCRAFT_EDIT_OPERATION = '/api/filmcraft/edit';
 
 function asNonEmptyString(value, fieldName) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -44,12 +47,31 @@ function normalizeSources(value) {
 }
 
 module.exports = route(async function jobs(req, res) {
-  if (!methodAllowed(req, res, ['POST'])) {
+  if (!methodAllowed(req, res, ['GET', 'POST'])) {
     return;
   }
 
   const config = getConfig();
   requirePassword(req, config.orchestratorPassword);
+
+  if (req.method === 'GET') {
+    const url = new URL(req.url || '/api/jobs', 'http://localhost');
+    const id = url.searchParams.get('id');
+    if (!id) {
+      throw new HttpError(400, 'id query parameter is required.');
+    }
+
+    const job = await readProcessingJob(config, id);
+    if (!job) {
+      throw new HttpError(404, 'Job was not found.');
+    }
+
+    sendJson(res, 200, {
+      ok: true,
+      job
+    });
+    return;
+  }
 
   const body = await readJsonBody(req);
   const title = asNonEmptyString(body.title || body.name, 'title');
@@ -64,24 +86,68 @@ module.exports = route(async function jobs(req, res) {
     throw new HttpError(400, 'editPlan must be an object when provided.');
   }
 
-  const job = {
-    id: requestId('edit'),
-    status: 'accepted',
-    projectId,
-    title,
-    instructions,
-    sources,
-    editPlan: body.editPlan || {},
-    nextAction:
-      'Queue this job for a FilmCraft worker, then upload the rendered output to Supabase completed-videos.',
-    createdAt: new Date().toISOString()
+  const idempotencyKey =
+    typeof body.idempotencyKey === 'string' && body.idempotencyKey.trim()
+      ? body.idempotencyKey.trim()
+      : requestId('filmcraft-edit');
+  const projectName =
+    typeof body.projectName === 'string' && body.projectName.trim()
+      ? body.projectName.trim()
+      : config.superSaucedProjectName;
+  const createdAt = new Date().toISOString();
+  const outputBase = `${projectId}/filmcraft-projects/${idempotencyKey}`;
+  const requestedBy =
+    (typeof body.requestedBy === 'string' && body.requestedBy.trim()) ||
+    config.processingJobRequestedBy ||
+    (await findProcessingJobRequester(config, projectId));
+  if (!requestedBy) {
+    throw new HttpError(
+      400,
+      'No requested_by user could be resolved for this workspace. Set PROCESSING_JOB_REQUESTED_BY or pass requestedBy.'
+    );
+  }
+  const input = {
+    version: 1,
+    kind: 'filmcraft-edit',
+    body: {
+      projectId,
+      projectName,
+      title,
+      instructions,
+      sources,
+      editPlan: body.editPlan || {}
+    },
+    outputs: {
+      bucket: config.supabaseMediaBucket,
+      projectFile: `${outputBase}/project.fcproj`,
+      editPlan: `${outputBase}/edit-plan.json`,
+      sources: `${outputBase}/sources.json`,
+      firstPassVideo: `${outputBase}/first-pass.mp4`,
+      metadata: `${outputBase}/metadata.json`
+    },
+    createdAt
   };
+  const row = await createProcessingJob(config, {
+    workspace_id: projectId,
+    requested_by: requestedBy,
+    operation: FILMCRAFT_EDIT_OPERATION,
+    input,
+    expected_revision: Number.isInteger(body.expectedRevision) ? body.expectedRevision : 0,
+    idempotency_key: idempotencyKey,
+    status: 'queued',
+    attempts: 0,
+    phase: 'Queued for FilmCraft Mac worker',
+    available_at: createdAt
+  });
 
   sendJson(res, 202, {
     ok: true,
-    persisted: false,
-    job,
-    note:
-      'This route validates and shapes Grok edit jobs. Add the Supabase queue table contract before enabling durable job persistence.'
+    persisted: true,
+    job: row,
+    worker: {
+      operation: FILMCRAFT_EDIT_OPERATION,
+      expectedOutput: input.outputs,
+      nextAction: 'Run the local Mac worker to lease this job and create the editable FilmCraft project.'
+    }
   });
 });

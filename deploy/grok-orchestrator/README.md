@@ -68,11 +68,16 @@ vf/
     completed-videos/
 ```
 
+### `GET /api/jobs?id=<job-id>`
+
+Password-protected. Reads a Supabase `processing_jobs` row by id so Grok can check whether the local
+Mac worker has finished.
+
 ### `POST /api/jobs`
 
-Password-protected. Accepts a Grok edit-job payload and returns the normalized job envelope. This first
-version validates and shapes the request; a render worker can later poll this route or a Supabase-backed
-queue can be added once the exact job table contract is finalized.
+Password-protected. Accepts a Grok edit-job payload, writes a durable Supabase `processing_jobs` row with
+`operation = /api/filmcraft/edit`, and returns the queued job. The local Mac worker leases these jobs and
+creates an editable FilmCraft project.
 
 Example:
 
@@ -92,6 +97,51 @@ Example:
   }
 }
 ```
+
+The worker writes artifacts to this Supabase storage layout:
+
+```text
+<workspace-id>/filmcraft-projects/<edit-job-id-or-idempotency-key>/
+  project.fcproj
+  edit-plan.json
+  sources.json
+  first-pass.mp4
+  metadata.json
+```
+
+## Local Mac Worker
+
+The Mac worker is what actually runs FilmCraft. Vercel should stay lightweight: it receives Grok's job,
+writes the queue row, and returns quickly.
+
+From the repository root:
+
+```sh
+npm --prefix deploy/grok-orchestrator run worker -- --once
+```
+
+Use `--once` to process one queued job and exit. Omit `--once` to keep polling:
+
+```sh
+npm --prefix deploy/grok-orchestrator run worker
+```
+
+For a safe local test that creates the editable project but does not upload artifacts:
+
+```sh
+npm --prefix deploy/grok-orchestrator run worker -- --once --dry-run
+```
+
+Worker-only environment variables:
+
+```text
+FILMCRAFT_CLI_PATH=/absolute/path/to/filmcraft-cli
+FILMCRAFT_WORK_DIR=/Users/you/FilmCraftWorker
+FILMCRAFT_WORKER_RENDER_FIRST_PASS=false
+```
+
+Set `FILMCRAFT_WORKER_RENDER_FIRST_PASS=true` when you want the worker to export `first-pass.mp4` after
+it builds the editable project. Leave it off when you only want the `.fcproj` handoff for manual editing.
 
 ### `POST /api/publish`
 

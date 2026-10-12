@@ -8,6 +8,7 @@
   },
   "scripts": {
     "check": "find api scripts -name '*.js' -print0 | xargs -0 -n1 node --check",
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "worker": "node scripts/local-filmcraft-worker.js"
   }
 }
